@@ -1,0 +1,55 @@
+{
+  "name": "experitest-js-client",
+  "private": false,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=8.10.0"
+  },
+  "description": "Expertiest JS Client",
+  "main": "dist/lib/index.js",
+  "scripts": {
+    "clean": "rimraf dist web-test",
+    "compile": "tsc -p tsconfig.node.json",
+    "watch": "tsc -p tsconfig.node.json -w",
+    "test": "npm run compile && mocha --exclude 'dist/src/test/browser/**'  'dist/src/test/**/*.test.js'",
+    "prepublishOnly": "npm run clean && npm run compile",
+    "start:dev": "webpack-dev-server --config webpack/webpack.dev.js",
+    "webpack:dev": "npm run clean && webpack --config webpack/webpack.dev.js"
+  },
+  "author": "Experitest",
+  "license": "MIT",
+  "keywords": [
+    "experitest"
+  ],
+  "dependencies": {
+    "cross-fetch": "^2.2.2",
+    "universal-websocket-client": "^1.0.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/lodash": "^4.14.116",
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^8.10.29",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "css-loader": "^1.0.0",
+    "file-loader": "^2.0.0",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.4.2",
+    "mocha": "^5.2.0",
+    "rimraf": "^2.6.2",
+    "ts-loader": "^5.1.0",
+    "tslint": "^5.11.0",
+    "typescript": "^3.0.3",
+    "webpack": "^4.20.2",
+    "webpack-cli": "^3.1.1",
+    "webpack-dev-server": "^3.1.9"
+  },
+  "files": [
+    "dist/index.*",
+    "dist/lib/**",
+    "src/",
+    "*.md"
+  ]
+}

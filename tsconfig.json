@@ -1,0 +1,29 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+      "allowJs": true,      
+      "checkJs": false, 
+      "strict": true,
+      "noUnusedLocals": true,
+      "outDir": "./dist",      
+      "rootDir": ".",    
+      "target": "es2017",
+      "moduleResolution": "node",
+      "module": "esnext",      
+      "sourceMap": false,
+      "newLine": "LF",
+      "resolveJsonModule": true,
+      "lib": [
+        "dom",
+        "es2017",
+        "es2015.promise",
+        "esnext.asynciterable"
+      ]
+    },
+    "exclude": [      
+      "node_modules",
+      "dist",
+      "webpack"
+    ]
+  }
+  
