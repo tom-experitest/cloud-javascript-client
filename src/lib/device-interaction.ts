@@ -92,7 +92,7 @@ export class Device {
     }
 
     _handleInfoOnMessage() {
-        this.webSockets['screen'].onmessage = (event: any) => {
+        this.webSockets['info'].onmessage = (event: any) => {
             this.infoCallback(event.data);
         };
     }
