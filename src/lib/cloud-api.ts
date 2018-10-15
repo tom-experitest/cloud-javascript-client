@@ -46,7 +46,7 @@ export class CloudAPI {
     async getWebSocketInfo(): Promise<any> {
         const currentProject = await this.getCurrentProject();
         const deviceId = await this.findAvailableDevice(DeviceOS.iOS);
-        const path = "/devices/" + deviceId + "/webControl/" + currentProject + "/"
+        const path = "/devices/" + deviceId + "/webControl/" + currentProject.id + "/"
             + new Date().getTime() + "/xxx/1/true";
         return (await this.rest.doFetch(this._getBaseUrl(path, "v2"), this.access_key, MethodType.PUT)).json();
     }
