@@ -4,12 +4,10 @@ import {CloudAPI} from '../lib/cloud-api';
 import {Device} from "../lib/device-interaction";
 import {DeviceModel} from "../modules/device";
 import {ApplicationModel} from "../modules/application";
-
+import {ACCESS_KEY, CLOUD_DOMAIN} from "./cloud-info";
 chai.use(chai_promise);
 
 // tslint:disable-next-line:max-line-length
-const ACCESS_KEY = '';
-const CLOUD_DOMAIN = '';
 
 describe('cloud-api tests', function () {
 

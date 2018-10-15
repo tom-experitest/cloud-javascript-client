@@ -5,6 +5,9 @@ Project is written in typescript and supports both running in the browser and no
 
 The entery point is the CloudAPI class. To init it you will need the URL to one of Experitest clouds as well as an access key.
 You will find an use example in cloud-api.test.ts file.
+To run the test you need to create under /src/test/ a file name cloud-info.js, this file should contain look like:
+const ACCESS_KEY = '<YOUR ACCESS KEY>';
+const CLOUD_DOMAIN = '<CLOUD URL>';
 
 
 # Setup 
