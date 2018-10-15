@@ -8,7 +8,7 @@ You will find an use example in cloud-api.test.ts file.
 To run the test you need to create under /src/test/ a file name cloud-info.js, this file should contain look like:
 ```javascript
 const ACCESS_KEY = '<YOUR ACCESS KEY>';
-const CLOUD_DOMAIN = '<CLOUD URL>';
+const CLOUD_URL = '<CLOUD URL>';
 ```
 
 # Setup 

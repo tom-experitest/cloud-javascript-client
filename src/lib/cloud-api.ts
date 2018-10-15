@@ -43,10 +43,11 @@ export class CloudAPI {
         return user.projects.filter((project) => project.id === user.currentProjectId)[0];
     }
 
-    async getWebSocketInfo(): Promise<any> {
+    async getWebSocketInfo(device: DeviceModel|any): Promise<any> {
+
         const currentProject = await this.getCurrentProject();
-        const deviceId = await this.findAvailableDevice(DeviceOS.iOS);
-        const path = "/devices/" + deviceId + "/webControl/" + currentProject.id + "/"
+        // const deviceId = await this.findAvailableDevice(DeviceOS.iOS);
+        const path = "/devices/" + device.id + "/webControl/" + currentProject.id + "/"
             + new Date().getTime() + "/xxx/1/true";
         return (await this.rest.doFetch(this._getBaseUrl(path, "v2"), {method: MethodType.PUT})).json();
     }
@@ -55,17 +56,18 @@ export class CloudAPI {
         return this.cloud_url;
     }
 
-    async findAvailableDevice(os: DeviceOS) {
+    async findAvailableDevice(os: DeviceOS): Promise<DeviceModel|any>{
         let selectedDevice = null;
         const devices: DeviceModel [] = await this.fetchDevices();
         for (let i = 0; devices.length; i++) {
             if (devices[i].status === DeviceStatus.Available && devices[i].os === os) {
                 selectedDevice = devices[i];
                 console.log("Found a device: " + selectedDevice.name + " with id: " + selectedDevice.id);
-                //console.log(device);
-                return selectedDevice.id;
+                return selectedDevice;
             }
         }
+        console.warn("Didn't find any available device");
+        return undefined;
     }
 
     async fetchApplications(): Promise<ApplicationModel[]> {
@@ -78,7 +80,7 @@ export class CloudAPI {
         const data = new FormData();
         data.append('url', applicationUrl);
         const projectId = (await this.getCurrentProject()).id;
-        data.append('projectId', projectId.toString());
+        data.append('project', `id:${projectId.toString()}`);
         const url = `${this._getBaseUrl('/applications/new-from-url', "v1")}`;
         const options = {
             method:MethodType.POST,
