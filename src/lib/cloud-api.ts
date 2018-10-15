@@ -9,28 +9,28 @@ export type APIVersion = "v1" | "v2";
 export class CloudAPI {
     rest: RestAPI;
 
-    constructor(readonly cloud_domain: string, readonly access_key: string) {
-        this.rest = new RestAPI(cloud_domain, access_key);
+    constructor(readonly cloud_url: string, readonly access_key: string) {
+        this.rest = new RestAPI(access_key);
     }
 
     _getBaseUrl(path: string, version: APIVersion) {
-        if (this.cloud_domain.startsWith('http')) { //if starts with http we use url as is
-            return `${this.cloud_domain}/api/${version}` + path;
+        if (this.cloud_url.startsWith('http')) { //if starts with http we use url as is
+            return `${this.cloud_url}/api/${version}` + path;
         }
-        return `https://${this.cloud_domain}/api/${version}` + path;
+        return `https://${this.cloud_url}/api/${version}` + path;
     }
 
     async fetchDevices(): Promise<any> {
-        const base_url = this._getBaseUrl('/devices', "v2");
+        const url = this._getBaseUrl('/devices', "v2");
 
         //fetch selenium  endpoints and devices
-        const resp = await this.rest.doFetch(base_url, this.access_key, 'GET');
+        const resp = await this.rest.doGet(url);
         return await resp.json();
     }
 
     async fetchUser(): Promise<UserModel> {
         const url = this._getBaseUrl('/status/user', "v2");
-        const res = await this.rest.doFetch(url, this.access_key, 'GET');
+        const res = await this.rest.doGet(url);
         const user = await res.json();
         // if (!user.username) {
         //     throw new Error('Failed fetching user details. Expected username field for json: ' + JSON.stringify(user, undefined, 2));
@@ -48,11 +48,11 @@ export class CloudAPI {
         const deviceId = await this.findAvailableDevice(DeviceOS.iOS);
         const path = "/devices/" + deviceId + "/webControl/" + currentProject.id + "/"
             + new Date().getTime() + "/xxx/1/true";
-        return (await this.rest.doFetch(this._getBaseUrl(path, "v2"), this.access_key, MethodType.PUT)).json();
+        return (await this.rest.doFetch(this._getBaseUrl(path, "v2"), {method: MethodType.PUT})).json();
     }
 
     getCloudDomain() {
-        return this.cloud_domain;
+        return this.cloud_url;
     }
 
     async findAvailableDevice(os: DeviceOS) {
@@ -70,7 +70,7 @@ export class CloudAPI {
 
     async fetchApplications(): Promise<ApplicationModel[]> {
         const url = `${this._getBaseUrl('/applications', "v1")}`;
-        return await (await this.rest.doFetch(url, this.access_key, MethodType.GET)).json();
+        return await (await this.rest.doGet(url)).json();
     }
 
     async uploadApplication(applicationUrl: string) {
@@ -80,7 +80,11 @@ export class CloudAPI {
         const projectId = (await this.getCurrentProject()).id;
         data.append('projectId', projectId.toString());
         const url = `${this._getBaseUrl('/applications/new-from-url', "v1")}`;
-        return await this.rest.doFetchWithFormData(url, this.access_key, MethodType.POST, data);
+        const options = {
+            method:MethodType.POST,
+            body:data
+        };
+        return await this.rest.doFetch(url, options);
 
     }
 
