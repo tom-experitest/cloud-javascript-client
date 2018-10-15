@@ -17,13 +17,12 @@ export class RestAPI {
     }
 
     async doGet(url: string): Promise<Response> {
-       return await this.doFetch(url,{method:MethodType.GET});
+        return await this.doFetch(url, {method: MethodType.GET});
     }
 
     async doFetch(url: string, options: RequestInit): Promise<Response> {
 
-        const headers = this.prepareHeaders(this.access_key, options.method);
-        options.headers = Object.assign({},options.headers,headers);
+        options.headers= this.prepareHeaders(this.access_key, options.method);
         options.mode = 'cors';
         const res = await fetch(url, options);
 
@@ -42,7 +41,7 @@ export class RestAPI {
     //     return res;
     // }
 
-    prepareHeaders(access_key: string, type: string|undefined) {
+    prepareHeaders(access_key: string, type: string | undefined) {
         const headers = new Headers();
         headers.set('Authorization', `Bearer ${access_key}`);
         headers.set('cache-control', 'no-cache');
