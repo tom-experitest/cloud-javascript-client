@@ -63,8 +63,9 @@ describe('cloud-api tests', function () {
         }
         else {
             setTimeout(async () => {
-                const webSocketInfo = await (await cloud.getWebSocketInfo(deviceInfo));
-                const device = await (new Device(webSocketInfo.deviceId, cloud, webSocketInfo.externalLink));
+                const webSocketInfo =await cloud.getWebSocketInfo(deviceInfo);
+                const device = new Device(webSocketInfo.deviceId, cloud, webSocketInfo.externalLink);
+                await device.open();
                 await device.addScreenListner((screenshot) => console.log(screenshot));
                 await device.addLogListener((log) => console.log("log: " + log));
                 await device.startLog();

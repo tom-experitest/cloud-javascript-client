@@ -3,6 +3,7 @@ import {clearInterval} from "timers";
 import {ScreenInstance} from "../ScreenInstance";
 
 export class Device {
+    firestScreen: boolean = false;
     webSockets: any = {};
     intervals: any = {};
     screenCallback: (screen: ScreenInstance) => void = () => (null);
@@ -11,10 +12,9 @@ export class Device {
     messageId: number = 1;
 
     constructor(readonly device_id: string, readonly cloud: CloudAPI, readonly externalLink: string) {
-        this._open();
     }
 
-    async _open() {
+    async open() {
         await this._createWSConnections();
     }
 
@@ -41,6 +41,7 @@ export class Device {
         this.webSockets['file'] = new WebSocket(fileUrl);
         this.webSockets['command'] = new WebSocket(commandUrl);
         this.webSockets['info'] = new WebSocket(infoUrl);
+        await this._waitForFirstScreen();
         await this._waitForSocketConnection(this.webSockets['info'], 'info');
         await this._waitForSocketConnection(this.webSockets['command'], 'command');
         this._handleInfoOnMessage();
@@ -66,6 +67,27 @@ export class Device {
         );
         
     }
+
+    _waitForFirstScreen(): Promise<any>{
+        var self = this;
+        return new Promise(
+            (resolve,reject) =>{   
+                setTimeout(
+                    function () {
+                        if (self.firestScreen) {
+                            console.log("First Screen wait end");
+                            resolve();
+                            return;
+                        } else {
+                            console.log("wait for connection...")
+                            resolve(self._waitForFirstScreen());
+                        }
+                    }, 500); // wait 200 milisecond for the connection...
+            }
+        );
+        
+    }
+
     _startMonitorWs() {
         this.intervals['screen'] = setInterval(() => {
             if (this.webSockets['screen'].readyState == 1) {
@@ -109,6 +131,7 @@ export class Device {
 
     _handleScreenOnMessage() {
         this.webSockets['screen'].onmessage = async (event: any) => {
+            this.firestScreen = true;
             const obj =  await this._parseMessage(event.data);
             const screen = new ScreenInstance(obj.config.width, obj.config.height, obj.config.orientation, obj.config.rate, obj.timestamp, obj.body, obj.mime, obj.binary);
             this._sendMessage('screenReceivedAck', {timestamp: screen.timestamp})
@@ -180,7 +203,7 @@ export class Device {
     }
 
     startLog(){
-        this._sendMessage('startlog','');
+        this._sendMessageAdvance('startlog','',false, false, false, false, false);
     }
 
     stopLog(){
@@ -189,6 +212,13 @@ export class Device {
 
     setlocation(latitude:number, longitude:number){
         this._sendMessage('setlocation', String(latitude) + ";" + String(longitude));
+    }
+
+    setRate(framesPerSecond:number){
+        if(framesPerSecond < 1 || framesPerSecond > 10){
+            throw "Frame per second is out of range, should be between 1 and 10, actual " + framesPerSecond; 
+        }
+        this._sendMessage('setrefresh', parseInt('' + (1000/framesPerSecond)));
     }
     _readBlob(buffer: Blob): Promise<ArrayBuffer>{
 
