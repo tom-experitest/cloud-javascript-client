@@ -45,6 +45,7 @@ export class RestAPI {
         const headers = new Headers();
         headers.set('Authorization', `Bearer ${access_key}`);
         headers.set('cache-control', 'no-cache');
+        //headers.set('x-xss-protection','1; mode=block');
         headers.set('pragma', 'no-cache');
         if (type !== 'GET' && this.xsrf_token !== '') {
             headers.set('cookie', "XSRF-TOKEN=" + this.xsrf_token + ";JSESSIONID=" + this.jsessionid);

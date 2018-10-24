@@ -38,7 +38,7 @@ describe('cloud-api tests', function () {
         console.log(applicationId);
     });
 
-    it('#open Web Socket', async function () {
+    /*it('#open Web Socket', async function () {
         this.timeout(120 * 1000);
         const cloud = new CloudAPI(CLOUD_URL, ACCESS_KEY);
         const deviceInfo = await cloud.findAvailableDevice(DeviceOS.Android);
@@ -50,6 +50,24 @@ describe('cloud-api tests', function () {
                 const webSocketInfo = await (await cloud.getWebSocketInfo(deviceInfo));
                 const device = new Device(webSocketInfo.deviceId, cloud, webSocketInfo.externalLink);
                 await device.addScreenListner((screenshot) => console.log(screenshot));
+            },10*1000);
+
+        }
+    });*/
+    it('#start logs', async function () {
+        this.timeout(120 * 1000);
+        const cloud = new CloudAPI(CLOUD_URL, ACCESS_KEY);
+        const deviceInfo = await cloud.findAvailableDevice(DeviceOS.Android);
+        if (deviceInfo === undefined) {
+            console.warn("SKIPPED TEST - NO AVAILABLE DEVICE")
+        }
+        else {
+            setTimeout(async () => {
+                const webSocketInfo = await (await cloud.getWebSocketInfo(deviceInfo));
+                const device = await (new Device(webSocketInfo.deviceId, cloud, webSocketInfo.externalLink));
+                await device.addScreenListner((screenshot) => console.log(screenshot));
+                await device.addLogListener((log) => console.log("log: " + log));
+                await device.startLog();
             },10*1000);
 
         }
