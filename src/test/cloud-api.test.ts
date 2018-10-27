@@ -1,8 +1,7 @@
 import * as chai from 'chai';
 import * as chai_promise from 'chai-as-promised';
 import {CloudAPI} from '../lib/cloud-api';
-import {Device} from "../lib/device-interaction";
-import {DeviceModel, DeviceOS} from "../modules/device";
+import {DeviceModel} from "../modules/device";
 import {ApplicationModel} from "../modules/application";
 import {ACCESS_KEY, CLOUD_URL} from "./cloud-info";
 
@@ -16,7 +15,7 @@ describe('cloud-api tests', function () {
         const assert = chai.assert;
         assert.isNotEmpty(ACCESS_KEY, 'ACCESS KEY SHOULD NOT BE EMPTY - PLEASE EDIT ./src/test/cloud-info.ts');
         assert.isNotEmpty(CLOUD_URL, 'CLOUD DOMAIN SHOULD NOT BE EMPTY -  PLEASE EDIT ./src/test/cloud-info.ts');
-    })
+    });
     it('#fetchDevices', async function () {
         // const assert = chai.assert;
         const cloud = new CloudAPI(CLOUD_URL, ACCESS_KEY);
@@ -54,23 +53,5 @@ describe('cloud-api tests', function () {
 
         }
     });*/
-    it('#start logs', async function () {
-        this.timeout(120 * 1000);
-        const cloud = new CloudAPI(CLOUD_URL, ACCESS_KEY);
-        const deviceInfo = await cloud.findAvailableDevice(DeviceOS.Android);
-        if (deviceInfo === undefined) {
-            console.warn("SKIPPED TEST - NO AVAILABLE DEVICE")
-        }
-        else {
-            setTimeout(async () => {
-                const webSocketInfo =await cloud.getWebSocketInfo(deviceInfo);
-                const device = new Device(webSocketInfo.deviceId, cloud, webSocketInfo.externalLink);
-                await device.open();
-                await device.addScreenListner((screenshot) => console.log(screenshot));
-                await device.addLogListener((log) => console.log("log: " + log));
-                await device.startLog();
-            },10*1000);
 
-        }
-    });
 });
