@@ -1,10 +1,20 @@
 import {CloudAPI} from "./cloud-api";
-import {clearInterval} from "timers";
+// import {clearInterval} from "timers";
 import {ScreenInstance} from "../ScreenInstance";
+import {DeviceWebsockets} from "./device-websockets";
 
 export class Device {
-    firestScreen: boolean = false;
-    webSockets: any = {};
+    get webSockets(): DeviceWebsockets {
+        // @ts-ignore
+        return this._webSockets;
+    }
+
+    set webSockets(value: DeviceWebsockets) {
+        this._webSockets = value;
+    }
+
+    firstScreen: boolean = false;
+    private _webSockets: DeviceWebsockets | undefined;
     intervals: any = {};
     screenCallback: (screen: ScreenInstance) => void = () => (null);
     infoCallback: (data: any) => void = () => (null);
@@ -15,7 +25,8 @@ export class Device {
     }
 
     async open() {
-        await this._createWSConnections();
+        await
+            await this._createWSConnections();
     }
 
     _createWsUrl(token: string, externalLink: string, connection: string): string {
@@ -35,116 +46,130 @@ export class Device {
         const commandUrl = this._createWsUrl(token, this.externalLink, 'command');
         const infoUrl = this._createWsUrl(token, this.externalLink, 'information');
 
-        this.webSockets['screen'] = new WebSocket(screenUrl);
+        this.webSockets = {
+            command: new WebSocket(commandUrl),
+            info: new WebSocket(infoUrl),
+            screen: new WebSocket(screenUrl),
+            file: new WebSocket(fileUrl)
+        };
+
         this._handleScreenOnMessage();
 
-        this.webSockets['file'] = new WebSocket(fileUrl);
-        this.webSockets['command'] = new WebSocket(commandUrl);
-        this.webSockets['info'] = new WebSocket(infoUrl);
         await this._waitForFirstScreen();
-        await this._waitForSocketConnection(this.webSockets['info'], 'info');
-        await this._waitForSocketConnection(this.webSockets['command'], 'command');
+        await this._waitForSocketConnection(this.webSockets.info, 'info');
         this._handleInfoOnMessage();
+        await this._waitForSocketConnection(this.webSockets.command, 'command');
         this._startMonitorWs();
     }
-    _waitForSocketConnection(socket:WebSocket, connectionName:string): Promise<any>{
-        var self = this;
+
+    _waitForSocketConnection(socket: WebSocket, connectionName: string): Promise<any> {
+        const self = this;
         return new Promise(
-            (resolve,reject) =>{
-                
+            (resolve, reject) => {
+
                 setTimeout(
                     function () {
                         if (socket.readyState === 1) {
-                            console.log("Connection is open: " + connectionName)
+                            console.log("Connection is open: " + connectionName);
                             resolve();
                             return;
                         } else {
-                            console.log("wait for connection...")
+                            console.log("wait for connection...");
                             resolve(self._waitForSocketConnection(socket, connectionName));
                         }
                     }, 500); // wait 200 milisecond for the connection...
             }
         );
-        
+
     }
 
-    _waitForFirstScreen(): Promise<any>{
-        var self = this;
+    _waitForFirstScreen(): Promise<any> {
+        const self = this;
         return new Promise(
-            (resolve,reject) =>{   
+            (resolve, reject) => {
                 setTimeout(
                     function () {
-                        if (self.firestScreen) {
+                        if (self.firstScreen) {
                             console.log("First Screen wait end");
                             resolve();
                             return;
                         } else {
-                            console.log("wait for connection...")
+                            console.log("wait for connection...");
                             resolve(self._waitForFirstScreen());
                         }
                     }, 500); // wait 200 milisecond for the connection...
             }
         );
-        
+
     }
 
     _startMonitorWs() {
         this.intervals['screen'] = setInterval(() => {
-            if (this.webSockets['screen'].readyState == 1) {
+            if (this.webSockets['screen'].readyState === 1) {
                 this.webSockets['screen'].send("ping");
             }
         }, 20 * 1000);
         this.intervals['command'] = setInterval(() => {
-            if (this.webSockets['command'].readyState == 1) {
+            if (this.webSockets['command'].readyState === 1) {
                 this.webSockets['command'].send("ping");
             }
         }, 20 * 1000);
         this.intervals['file'] = setInterval(() => {
-            if (this.webSockets['file'].readyState == 1) {
+            if (this.webSockets['file'].readyState === 1) {
                 this.webSockets['file'].send("ping");
             }
         }, 20 * 1000);
         this.intervals['info'] = setInterval(() => {
-            if (this.webSockets['info'].readyState == 1) {
+            if (this.webSockets['info'].readyState === 1) {
                 this.webSockets['info'].send("ping");
             }
         }, 20 * 1000);
     }
 
-    close() {
-        clearInterval(this.intervals['screen']);
-        this.webSockets['screen'].close();
-        clearInterval(this.intervals['info']);
-        this.webSockets['info'].close();
-        clearInterval(this.intervals['command']);
-        this.webSockets['command'].close();
-        clearInterval(this.intervals['file']);
-        this.webSockets['file'].close();
+    async close() {
+
+        //TODO : fix close intervals
+        // clearInterval(this.intervals['screen']);
+        this.webSockets.screen.close();
+        // clearInterval(this.intervals['info']);
+        this.webSockets.info.close();
+        // clearInterval(this.intervals['command']);
+        // clearInterval(this.intervals['file']);
+        this.webSockets.file.close();
+        const body = {"release": true, "experience": "", "comment": ""};
+        this._sendMessageAdvance("release", body, false, false, false, false, false);
+        this.webSockets.command.close();
     }
 
     addScreenListner(callback: (screenshot: ScreenInstance) => void) {
         this.screenCallback = callback;
     }
-    addLogListener(callback: (log: string) => void){
+
+    addLogListener(callback: (log: string) => void) {
         this.logCallback = callback;
+    }
+
+    addInfoCallback(callback: (log: string) => void) {
+        this.infoCallback = callback;
     }
 
     _handleScreenOnMessage() {
         this.webSockets['screen'].onmessage = async (event: any) => {
-            this.firestScreen = true;
-            const obj =  await this._parseMessage(event.data);
+            this.firstScreen = true;
+            const obj = await this._parseMessage(event.data);
             const screen = new ScreenInstance(obj.config.width, obj.config.height, obj.config.orientation, obj.config.rate, obj.timestamp, obj.body, obj.mime, obj.binary);
-            this._sendMessage('screenReceivedAck', {timestamp: screen.timestamp})
+            this._sendMessage('screenReceivedAck', {timestamp: screen.timestamp});
             this.screenCallback(screen);
         };
     }
 
     _handleInfoOnMessage() {
-        this.webSockets['info'].onmessage = (event: any) => {
-            if('log' == event.data.type){
-                this.logCallback(event.data.content);
+        this.webSockets.info.onmessage = (event: any) => {
+            const parsed = JSON.parse(event.data);
+            if ('log' === parsed.type) {
+                this.logCallback(parsed.content);
             }
-            this.infoCallback(event.data);
+            this.infoCallback(parsed.content);
         };
     }
 
@@ -158,69 +183,76 @@ export class Device {
         this.messageId++;
         this.webSockets['command'].send(JSON.stringify(message));
     }
-    _sendMessageAdvance(action: string, body: any, shift:boolean, meta:boolean, alt:boolean, ctrl:boolean, ack:boolean) {
+
+    _sendMessageAdvance(action: string, body: any, shift: boolean, meta: boolean, alt: boolean, ctrl: boolean, ack: boolean) {
         const message: any = {};
         message['action'] = action;
-        message['type'] = 'event';
         message['body'] = body;
+        message['messageId'] = this.messageId;
+        message['timestamp'] = (new Date()).getTime();
+        message['type'] = 'event';
         message['shiftKey'] = shift;
         message['metaKey'] = meta;
         message['altKey'] = alt;
         message['ctrlKey'] = ctrl;
         message['sendAck'] = ack;
-        
-        message['messageId'] = this.messageId;
-        message['timestamp'] = (new Date()).getTime();
         this.messageId++;
         this.webSockets['command'].send(JSON.stringify(message));
     }
 
-    home(){
+    home() {
         this._sendMessage('keyup', '{home}');
     }
-    unlock(){
+
+    unlock() {
         this._sendMessage('keyup', '{unlock}');
     }
+
     //{change_orientation}
-    change_orientation(){
+    change_orientation() {
         this._sendMessage('keyup', '{change_orientation}');
     }
-    volumeup(){
+
+    volumeup() {
         this._sendMessage('keyup', '{volumeup}');
     }
-    volumedown(){
+
+    volumedown() {
         this._sendMessage('keyup', '{volumedown}');
     }
-    close_app(){
+
+    close_app() {
         this._sendMessage('keyup', '{close_app}');
     }
-    back(){
+
+    back() {
         this._sendMessage('keyup', '{esc}');
     }
 
-    recentapps(){
+    recentapps() {
         this._sendMessage('keyup', '{recent_apps}');
     }
 
-    startLog(){
-        this._sendMessageAdvance('startlog','',false, false, false, false, false);
+    startLog() {
+        this._sendMessageAdvance('startlog', '', false, false, false, false, false);
     }
 
-    stopLog(){
-        this._sendMessage('stoplog','');
+    stopLog() {
+        this._sendMessage('stoplog', '');
     }
 
-    setlocation(latitude:number, longitude:number){
+    setlocation(latitude: number, longitude: number) {
         this._sendMessage('setlocation', String(latitude) + ";" + String(longitude));
     }
 
-    setRate(framesPerSecond:number){
-        if(framesPerSecond < 1 || framesPerSecond > 10){
-            throw "Frame per second is out of range, should be between 1 and 10, actual " + framesPerSecond; 
+    setRate(framesPerSecond: number) {
+        if (framesPerSecond < 1 || framesPerSecond > 10) {
+            throw new Error("Frame per second is out of range, should be between 1 and 10, actual " + framesPerSecond);
         }
-        this._sendMessage('setrefresh', parseInt('' + (1000/framesPerSecond)));
+        this._sendMessage('setrefresh', parseInt('' + (1000 / framesPerSecond)));
     }
-    _readBlob(buffer: Blob): Promise<ArrayBuffer>{
+
+    _readBlob(buffer: Blob): Promise<ArrayBuffer> {
 
         return new Promise((resolve) => {
 
@@ -328,13 +360,12 @@ export class Device {
         this.messageId++;
         this.webSockets['info'].send(message);
     }
-    keypress(key:string){
+
+    keypress(key: string) {
         this._sendMessage('keypress', key);
     }
 
-    keypressAdvance(key:string, shift:boolean, meta:boolean, alt: boolean, ctrl:boolean, ack:boolean){
-        this._sendMessageAdvance('keypress',key, shift, meta, alt, ctrl, ack);
+    keypressAdvance(key: string, shift: boolean, meta: boolean, alt: boolean, ctrl: boolean, ack: boolean) {
+        this._sendMessageAdvance('keypress', key, shift, meta, alt, ctrl, ack);
     }
-
-
 }
