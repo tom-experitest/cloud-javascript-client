@@ -48,7 +48,7 @@ export class CloudAPI {
         const currentProject = await this.getCurrentProject();
         // const deviceId = await this.findAvailableDevice(DeviceOS.iOS);
         const path = "/devices/" + device.id + "/webControl/" + currentProject.id + "/"
-            + new Date().getTime() + "/xxx/1/true";
+            + new Date().getTime() + "/xxx/0/true";
         return (await this.rest.doFetch(this._getBaseUrl(path, "v2"), {method: MethodType.PUT})).json();
     }
 
@@ -89,5 +89,4 @@ export class CloudAPI {
         return await this.rest.doFetch(url, options);
 
     }
-
 }
